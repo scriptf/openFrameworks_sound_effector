@@ -58,3 +58,5 @@ DerivedData
 *.db
 *.db-shm
 *.db-wal
+
+bin/*
