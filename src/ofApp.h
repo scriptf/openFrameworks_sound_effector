@@ -23,9 +23,14 @@ class ofApp : public ofBaseApp{
 		void gotMessage(ofMessage msg);
 				
 		void audioIn(ofSoundBuffer & input);
-	
-		vector <float> left;
-		vector <float> right;
+        void audioOut(ofSoundBuffer & buffer);
+    
+        /*
+         vector <float> left;
+         vector <float> right;
+        */
+		vector <float> lMic;  // Left Mic
+		vector <float> rMic; // Right Mic
 		vector <float> volHistory;
 		
 		int 	bufferCounter;
@@ -35,4 +40,10 @@ class ofApp : public ofBaseApp{
 		float scaledVol;
 		
 		ofSoundStream soundStream;
+    
+        /* Speaker */
+        vector <float> lAudio;
+        vector <float> rAudio;
+        float     volume;
+
 };

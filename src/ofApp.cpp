@@ -1,8 +1,8 @@
 #include "ofApp.h"
 
 //--------------------------------------------------------------
-void ofApp::setup(){	 
-	
+void ofApp::setup(){
+    volume = 0.1f;
 	ofSetVerticalSync(true);
 	ofSetCircleResolution(80);
 	ofBackground(54, 54, 54);	
@@ -13,16 +13,19 @@ void ofApp::setup(){
 
 	int bufferSize = 256;
 
-	left.assign(bufferSize, 0.0);
-	right.assign(bufferSize, 0.0);
+    lMic.assign(bufferSize, 0.0);
+    rMic.assign(bufferSize, 0.0);
 	volHistory.assign(400, 0.0);
-	
+
+    lAudio.assign(bufferSize, 0.0);
+    rAudio.assign(bufferSize, 0.0);
+
 	bufferCounter	= 0;
 	drawCounter		= 0;
 	smoothedVol     = 0.0;
 	scaledVol		= 0.0;
 
-
+    //ofSoundStreamSetup(int nOutputs, int nInputs, int sampleRate, int bufferSize, int nBuffers)
 	ofSoundStreamSettings settings;
 
 	// if you want to set the device id to be different than the default
@@ -40,15 +43,29 @@ void ofApp::setup(){
 	auto devices = soundStream.getDeviceList();
 	//auto devices = soundStream.getMatchingDevices("default in");
 	if(!devices.empty()){
-		ofLog(OF_LOG_NOTICE, "aaaaaaaaaaaaaaaaaaaa");
-		settings.setInDevice(devices[0]);
-		ofLog(OF_LOG_NOTICE, "%d", devices[0].deviceID);
-		ofLog(OF_LOG_NOTICE,  devices[0].name);
-	}
+		/*
+        // Mac内の音声を取得する(Black Hole)
+        settings.setInDevice(devices[2]);
+        ofLog(OF_LOG_NOTICE, "deviceID = %d", devices[2].deviceID);
+        ofLog(OF_LOG_NOTICE,  devices[2].name);
+        */
+        ///*
+        // マイク入力
+        settings.setInDevice(devices[0]);
+        ofLog(OF_LOG_NOTICE, "deviceID = %d", devices[0].deviceID);
+        ofLog(OF_LOG_NOTICE,  devices[0].name);
+        //*/
+        // Audio
+        settings.setOutDevice(devices[1]);
+        ofLog(OF_LOG_NOTICE, "deviceID = %d", devices[1].deviceID);
+        ofLog(OF_LOG_NOTICE,  devices[1].name);
+    }
 
-	settings.setInListener(this);
+    settings.setInListener(this);  // Mic
+    settings.setOutListener(this); // Audio
 	settings.sampleRate = 44100;
-	settings.numOutputChannels = 0;
+//	settings.numOutputChannels = 0;
+    settings.numOutputChannels = 2;
 	settings.numInputChannels = 2;
 	settings.bufferSize = bufferSize;
 	soundStream.setup(settings);
@@ -71,61 +88,176 @@ void ofApp::update(){
 
 //--------------------------------------------------------------
 void ofApp::draw(){
-	
+	int gWidth = 300; // Width of graph
+    
 	ofSetColor(225);
-	ofDrawBitmapString("AUDIO INPUT EXAMPLE", 32, 32);
-	ofDrawBitmapString("press 's' to unpause the audio\n'e' to pause the audio", 31, 92);
-	
+	ofDrawBitmapString("AUDIO INPUT EXAMPLE", 32, 42);
+	string reportString = "volume: (" + ofToString(volume, 2) + ") modify with -/+";
+    ofDrawBitmapString(reportString, 32, 82);
+    ofDrawBitmapString("press 's' to unpause the audio\n'e' to pause the audio", 32, 92);
+    
+    
 	ofNoFill();
 	
-	// draw the left channel:
+	// draw the left Mic:
 	ofPushStyle();
 		ofPushMatrix();
-		ofTranslate(32, 170, 0);
-			
+		//ofTranslate(32, 170, 0);
+        ofTranslate(32, 150, 0); // 座標の原点を変更する
+
 		ofSetColor(225);
-		ofDrawBitmapString("Left Channel", 4, 18);
+		ofDrawBitmapString("Left Mic", 4, 18);
 		
 		ofSetLineWidth(1);	
-		ofDrawRectangle(0, 0, 512, 200);
+		ofDrawRectangle(0, 0, gWidth, 200);
 
 		ofSetColor(245, 58, 135);
 		ofSetLineWidth(3);
 					
 			ofBeginShape();
-			for (unsigned int i = 0; i < left.size(); i++){
-				ofVertex(i*2, 100 -left[i]*180.0f);
-			}
+			for (unsigned int i = 0; i < lMic.size(); i++){
+                //ofVertex(i*2, 100 -lMic[i]*180.0f);
+                ofVertex(i, 100 -lMic[i]*180.0f);
+            }
 			ofEndShape(false);
 			
 		ofPopMatrix();
 	ofPopStyle();
 
-	// draw the right channel:
+	// draw the right Mic:
 	ofPushStyle();
 		ofPushMatrix();
-		ofTranslate(32, 370, 0);
-			
+		//ofTranslate(32, 370, 0);
+        ofTranslate(32+gWidth, 150, 0); // 座標の原点を変更する
+
 		ofSetColor(225);
-		ofDrawBitmapString("Right Channel", 4, 18);
+		ofDrawBitmapString("Right Mic", 4, 18);
 		
 		ofSetLineWidth(1);	
-		ofDrawRectangle(0, 0, 512, 200);
+		//ofDrawRectangle(0, 0, 512, 200);
+        ofDrawRectangle(0, 0, gWidth, 200);
 
 		ofSetColor(245, 58, 135);
 		ofSetLineWidth(3);
 					
 			ofBeginShape();
-			for (unsigned int i = 0; i < right.size(); i++){
-				ofVertex(i*2, 100 -right[i]*180.0f);
-			}
+			for (unsigned int i = 0; i < rMic.size(); i++){
+                //ofVertex(i*2, 100 -rMic[i]*180.0f);
+                ofVertex(i, 100 -rMic[i]*180.0f);
+            }
 			ofEndShape(false);
 			
 		ofPopMatrix();
 	ofPopStyle();
-	
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    // draw the left Audio:
+    ofPushStyle();
+        ofPushMatrix();
+        //ofTranslate(32, 170, 0);
+        ofTranslate(32, 350, 0); // 座標の原点を変更する
+
+        ofSetColor(225);
+        ofDrawBitmapString("Left Audio", 4, 18);
+        
+        ofSetLineWidth(1);
+        ofDrawRectangle(0, 0, gWidth, 200);
+
+        ofSetColor(245, 58, 135);
+        ofSetLineWidth(3);
+                    
+            ofBeginShape();
+            for (unsigned int i = 0; i < lAudio.size(); i++){
+                //ofVertex(i*2, 100 -lMic[i]*180.0f);
+                ofVertex(i, 100 -lAudio[i]*180.0f);
+            }
+            ofEndShape(false);
+            
+        ofPopMatrix();
+    ofPopStyle();
+
+    // draw the right Mic:
+    ofPushStyle();
+        ofPushMatrix();
+        //ofTranslate(32, 370, 0);
+        ofTranslate(32+gWidth, 350, 0); // 座標の原点を変更する
+
+        ofSetColor(225);
+        ofDrawBitmapString("Right Audio", 4, 18);
+        
+        ofSetLineWidth(1);
+        //ofDrawRectangle(0, 0, 512, 200);
+        ofDrawRectangle(0, 0, gWidth, 200);
+
+        ofSetColor(245, 58, 135);
+        ofSetLineWidth(3);
+                    
+            ofBeginShape();
+            for (unsigned int i = 0; i < rAudio.size(); i++){
+                //ofVertex(i*2, 100 -rMic[i]*180.0f);
+                ofVertex(i, 100 -rAudio[i]*180.0f);
+            }
+            ofEndShape(false);
+            
+        ofPopMatrix();
+    ofPopStyle();
+    
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    // draw the Left canceled Audio:
+    ofPushStyle();
+        ofPushMatrix();
+        //ofTranslate(32, 170, 0);
+        ofTranslate(32, 550, 0); // 座標の原点を変更する
+
+        ofSetColor(225);
+        ofDrawBitmapString("Left Canceled Audio", 4, 18);
+        
+        ofSetLineWidth(1);
+        ofDrawRectangle(0, 0, gWidth, 200);
+
+        ofSetColor(245, 58, 135);
+        ofSetLineWidth(3);
+                    
+            ofBeginShape();
+            for (unsigned int i = 0; i < lAudio.size(); i++){
+                //ofVertex(i*2, 100 -lMic[i]*180.0f);
+                ofVertex(i, 100 -(lMic[i] + lAudio[i])*180.0f);
+            }
+            ofEndShape(false);
+            
+        ofPopMatrix();
+    ofPopStyle();
+
+    // draw the right Mic:
+    ofPushStyle();
+        ofPushMatrix();
+        //ofTranslate(32, 370, 0);
+        ofTranslate(32+gWidth, 550, 0); // 座標の原点を変更する
+
+        ofSetColor(225);
+        ofDrawBitmapString("Right Canceled Audio", 4, 18);
+        
+        ofSetLineWidth(1);
+        //ofDrawRectangle(0, 0, 512, 200);
+        ofDrawRectangle(0, 0, gWidth, 200);
+
+        ofSetColor(245, 58, 135);
+        ofSetLineWidth(3);
+                    
+            ofBeginShape();
+            for (unsigned int i = 0; i < rAudio.size(); i++){
+                //ofVertex(i*2, 100 -rMic[i]*180.0f);
+                ofVertex(i, 100 - (rMic[i] + rAudio[i])*180.0f);
+            }
+            ofEndShape(false);
+            
+        ofPopMatrix();
+    ofPopStyle();
+
+    
+    
 	// draw the average volume:
-	ofPushStyle();
+    /*
+    ofPushStyle();
 		ofPushMatrix();
 		ofTranslate(565, 170, 0);
 			
@@ -150,18 +282,19 @@ void ofApp::draw(){
 			
 		ofPopMatrix();
 	ofPopStyle();
-	
+	*/
 	drawCounter++;
 	
 	ofSetColor(225);
-	string reportString = "buffers received: "+ofToString(bufferCounter)+"\ndraw routines called: "+ofToString(drawCounter)+"\nticks: " + ofToString(soundStream.getTickCount());
-	ofDrawBitmapString(reportString, 32, 589);
+	reportString = "buffers received: "+ofToString(bufferCounter)+"\ndraw routines called: "+ofToString(drawCounter)+"\nticks: " + ofToString(soundStream.getTickCount());
+	ofDrawBitmapString(reportString, 300, 82);
 		
 }
 
 //--------------------------------------------------------------
 void ofApp::audioIn(ofSoundBuffer & input){
-	
+    //ofLog(OF_LOG_NOTICE, "audioIn called");
+
 	float curVol = 0.0;
 	
 	// samples are "interleaved"
@@ -169,14 +302,33 @@ void ofApp::audioIn(ofSoundBuffer & input){
 
 	//lets go through each sample and calculate the root mean square which is a rough way to calculate volume	
 	for (size_t i = 0; i < input.getNumFrames(); i++){
-		left[i]		= input[i*2]*0.5;
-		right[i]	= input[i*2+1]*0.5;
-		//ofLog(OF_LOG_NOTICE, "l = %f",left[i]);
-		//ofLog(OF_LOG_NOTICE, "r = %f",right[i]);
-		curVol += left[i] * left[i];
-		curVol += right[i] * right[i];
+		
+        lMic[i]	= input[i*2]*0.5;   // 偶数番目に左の音
+        if(lMic[i] > 1){
+            lMic[i] = 1;
+        }
+        if(lMic[i] < -1){
+            lMic[i] = -1;
+        }
+        rMic[i]	= input[i*2+1]*0.5; // 奇数番目に右の音
+        if(rMic[i] > 1){
+            rMic[i] = 1;
+        }
+        if(rMic[i] < -1){
+            rMic[i] = -1;
+        }
+        lAudio[i] = -lMic[i]; //
+        rAudio[i] = -rMic[i];
+        
+        //ofLog(OF_LOG_NOTICE, "l = %f",lMic[i]);
+		//ofLog(OF_LOG_NOTICE, "r = %f",rMic[i]);
+		curVol += lMic[i] * lMic[i];
+		curVol += rMic[i] * rMic[i];
 		numCounted+=2;
-	}
+        //ofLog(OF_LOG_NOTICE, "lMic[i] = %f",lMic[i]);
+        //ofLog(OF_LOG_NOTICE, "rMic[i] = %f",rMic[i]);
+
+    }
 	
 	//this is how we get the mean of rms :) 
 	curVol /= (float)numCounted;
@@ -192,8 +344,38 @@ void ofApp::audioIn(ofSoundBuffer & input){
 }
 
 //--------------------------------------------------------------
-void ofApp::keyPressed  (int key){ 
-	if( key == 's' ){
+void ofApp::audioOut(ofSoundBuffer &buffer)
+{
+    //ofLog(OF_LOG_NOTICE, "audioOut called");
+    for (size_t i = 0; i < buffer.getNumFrames(); i++)
+    {
+        float lSample = 0.0;
+        float rSample = 0.0;
+    
+        // buffer.getNumChannels() : 2
+        //lAudio[i] = buffer[i * buffer.getNumChannels()] = - lMic[i];
+        //rAudio[i] = buffer[i * buffer.getNumChannels() + 1] = - rMic[i];
+        buffer[i * buffer.getNumChannels()] = lAudio[i] * volume;
+        buffer[i * buffer.getNumChannels() + 1] = rAudio[i] * volume;
+       // ofLog(OF_LOG_NOTICE, "lAudio[i] = %f",lAudio[i]);
+       // ofLog(OF_LOG_NOTICE, "rAudio[i] = %f",rAudio[i]);
+    }
+}
+
+//--------------------------------------------------------------
+void ofApp::keyPressed  (int key){
+    if (key == '-' || key == '_')
+    {
+        volume -= 0.05;
+        volume = MAX(volume, 0);
+    }
+    else if (key == '+' || key == '=')
+    {
+        volume += 0.05;
+        volume = MIN(volume, 1);
+    }
+    
+    if( key == 's' ){
 		soundStream.start();
 	}
 	
