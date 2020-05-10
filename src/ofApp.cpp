@@ -6,9 +6,11 @@ void ofApp::setup(){
 	ofSetVerticalSync(true);
 	ofSetCircleResolution(80);
 	ofBackground(54, 54, 54);	
-	
+
+	ofLog(OF_LOG_NOTICE, "-------------------------------------");
 	soundStream.printDeviceList();
-	
+	ofLog(OF_LOG_NOTICE, "-------------------------------------");
+
 	int bufferSize = 256;
 
 	left.assign(bufferSize, 0.0);
@@ -35,9 +37,13 @@ void ofApp::setup(){
 	// settings.api = ofSoundDevice::Api::PULSE;
 
 	// or by name
-	auto devices = soundStream.getMatchingDevices("default in");
+	auto devices = soundStream.getDeviceList();
+	//auto devices = soundStream.getMatchingDevices("default in");
 	if(!devices.empty()){
+		ofLog(OF_LOG_NOTICE, "aaaaaaaaaaaaaaaaaaaa");
 		settings.setInDevice(devices[0]);
+		ofLog(OF_LOG_NOTICE, "%d", devices[0].deviceID);
+		ofLog(OF_LOG_NOTICE,  devices[0].name);
 	}
 
 	settings.setInListener(this);
@@ -165,7 +171,8 @@ void ofApp::audioIn(ofSoundBuffer & input){
 	for (size_t i = 0; i < input.getNumFrames(); i++){
 		left[i]		= input[i*2]*0.5;
 		right[i]	= input[i*2+1]*0.5;
-
+		//ofLog(OF_LOG_NOTICE, "l = %f",left[i]);
+		//ofLog(OF_LOG_NOTICE, "r = %f",right[i]);
 		curVol += left[i] * left[i];
 		curVol += right[i] * right[i];
 		numCounted+=2;
