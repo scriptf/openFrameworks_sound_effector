@@ -43,18 +43,18 @@ void ofApp::setup(){
 	auto devices = soundStream.getDeviceList();
 	//auto devices = soundStream.getMatchingDevices("default in");
 	if(!devices.empty()){
-		/*
+		///*
         // Mac内の音声を取得する(Black Hole)
         settings.setInDevice(devices[2]);
         ofLog(OF_LOG_NOTICE, "deviceID = %d", devices[2].deviceID);
         ofLog(OF_LOG_NOTICE,  devices[2].name);
-        */
-        ///*
+        //*/
+        /*
         // マイク入力
         settings.setInDevice(devices[0]);
         ofLog(OF_LOG_NOTICE, "deviceID = %d", devices[0].deviceID);
         ofLog(OF_LOG_NOTICE,  devices[0].name);
-        //*/
+        */
         // Audio
         settings.setOutDevice(devices[1]);
         ofLog(OF_LOG_NOTICE, "deviceID = %d", devices[1].deviceID);
@@ -294,7 +294,10 @@ void ofApp::draw(){
 //--------------------------------------------------------------
 void ofApp::audioIn(ofSoundBuffer & input){
     //ofLog(OF_LOG_NOTICE, "audioIn called");
-
+    float clip_in = 1.0;
+    float clip_out = 0.05;
+    float amp = 10.0;
+    
 	float curVol = 0.0;
 	
 	// samples are "interleaved"
@@ -302,24 +305,42 @@ void ofApp::audioIn(ofSoundBuffer & input){
 
 	//lets go through each sample and calculate the root mean square which is a rough way to calculate volume	
 	for (size_t i = 0; i < input.getNumFrames(); i++){
-		
+        
         lMic[i]	= input[i*2]*0.5;   // 偶数番目に左の音
-        if(lMic[i] > 1){
-            lMic[i] = 1;
+        if(lMic[i] > clip_in){
+            lMic[i] = clip_in;
         }
-        if(lMic[i] < -1){
-            lMic[i] = -1;
+        if(lMic[i] < -clip_in){
+            lMic[i] = -clip_in;
         }
         rMic[i]	= input[i*2+1]*0.5; // 奇数番目に右の音
-        if(rMic[i] > 1){
-            rMic[i] = 1;
+        if(rMic[i] > clip_in){
+            rMic[i] = clip_in;
         }
-        if(rMic[i] < -1){
-            rMic[i] = -1;
+        if(rMic[i] < -clip_in){
+            rMic[i] = -clip_in;
         }
-        lAudio[i] = -lMic[i]; //
-        rAudio[i] = -rMic[i];
         
+        //-------------- output
+        lAudio[i] = -lMic[i]; //
+        if(lAudio[i] > clip_out){
+            lAudio[i] = clip_out;
+        }
+        if(lAudio[i] < -clip_out){
+            lAudio[i] = -clip_out;
+        }
+        
+        rAudio[i] = -rMic[i];
+        if(rAudio[i] > clip_out){
+            rAudio[i] = clip_out;
+        }
+        if(rAudio[i] < -clip_out){
+            rAudio[i] = -clip_out;
+        }
+                
+        lAudio[i] *= volume*amp;
+        rAudio[i] *= volume*amp;
+
         //ofLog(OF_LOG_NOTICE, "l = %f",lMic[i]);
 		//ofLog(OF_LOG_NOTICE, "r = %f",rMic[i]);
 		curVol += lMic[i] * lMic[i];
@@ -351,12 +372,15 @@ void ofApp::audioOut(ofSoundBuffer &buffer)
     {
         float lSample = 0.0;
         float rSample = 0.0;
-    
+        buffer[i * buffer.getNumChannels()] = lAudio[i];
+        buffer[i * buffer.getNumChannels() + 1] = rAudio[i];
+
+        //buffer[i * buffer.getNumChannels()] = lAudio[i] * volume;
+        //buffer[i * buffer.getNumChannels() + 1] = rAudio[i] * volume;
+
         // buffer.getNumChannels() : 2
         //lAudio[i] = buffer[i * buffer.getNumChannels()] = - lMic[i];
         //rAudio[i] = buffer[i * buffer.getNumChannels() + 1] = - rMic[i];
-        buffer[i * buffer.getNumChannels()] = lAudio[i] * volume;
-        buffer[i * buffer.getNumChannels() + 1] = rAudio[i] * volume;
        // ofLog(OF_LOG_NOTICE, "lAudio[i] = %f",lAudio[i]);
        // ofLog(OF_LOG_NOTICE, "rAudio[i] = %f",rAudio[i]);
     }
