@@ -3,6 +3,8 @@
 //--------------------------------------------------------------
 void ofApp::setup(){
     volume = 1.0f;
+    distortion = 0.2f;
+    
 	ofSetVerticalSync(true);
 	ofSetCircleResolution(80);
 	ofBackground(54, 54, 54);	
@@ -87,10 +89,11 @@ void ofApp::setup(){
 
   //  bHide = false;
     // instantiate and position the gui //
-    gui = new ofxDatGui( ofxDatGuiAnchor::TOP_RIGHT );
+    //gui = new ofxDatGui( ofxDatGuiAnchor::TOP_RIGHT );
+    gui = new ofxDatGui(700,32);
     
 // add some components //
-    gui->addTextInput("message", "# open frameworks #");
+    //gui->addTextInput("message", "# open frameworks #");
     
     gui->addFRM();
     gui->addBreak();
@@ -102,42 +105,39 @@ void ofApp::setup(){
     folder->addToggle("** toggle");
     folder->addColorPicker("** picker", ofColor::fromHex(0xFFD00B));
 // let's have it open by default. note: call this only after you're done adding items //
-    folder->expand();
+    //folder->expand();
+    folder->collapse();
 
     gui->addBreak();
-        
-    // add a couple range sliders //
-        
-        gui->addSlider("position X", 0, 120, 75);
-        gui->addSlider("position Y", -40, 240, 200);
-        gui->addSlider("position Z", -80, 120, -40);
-        
     // and a slider to adjust the gui opacity //
         gui->addSlider("datgui opacity", 0, 100, 100);
+        gui->addSlider("distortion", 0, 1, 0.2);
+        gui->addSlider("volume", 0, 3, 1);
         
     // and a colorpicker //
-        gui->addColorPicker("color picker", ofColor::fromHex(0xeeeeee));
+    //    gui->addColorPicker("color picker", ofColor::fromHex(0xeeeeee));
         
     // add a wave monitor //
     // take a look inside example-TimeGraph for more examples of this component and the value plotter //
-        gui->addWaveMonitor("wave\nmonitor", 3, .2);
+    //    gui->addWaveMonitor("wave\nmonitor", 3, .2);
         
-        gui->addBreak();
+    //    gui->addBreak();
         
     // add a dropdown menu //
+    /*
         vector<string> opts = {"option - 1", "option - 2", "option - 3", "option - 4"};
         gui->addDropdown("select option", opts);
         gui->addBreak();
-
+    */
     // add a 2d pad //
-        ofxDatGui2dPad* pad = gui->add2dPad("2d pad");
+    //    ofxDatGui2dPad* pad = gui->add2dPad("2d pad");
 
     // a button matrix //
-        gui->addMatrix("matrix", 21, true);
+    //    gui->addMatrix("matrix", 21, true);
 
     // and a couple of simple buttons //
-        gui->addButton("click");
-        gui->addToggle("toggle fullscreen", true);
+   //     gui->addButton("click");
+   //     gui->addToggle("toggle fullscreen", true);
 
     // adding the optional header allows you to drag the gui around //
         gui->addHeader(":: drag me to reposition ::");
@@ -197,7 +197,9 @@ void ofApp::draw(){
     //string reportString = "";
     string reportString = "volume: (" + ofToString((float)volume,2) + ") modify with -/+";
     ofDrawBitmapString(reportString, 32, 82);
-    ofDrawBitmapString("press 's' to unpause the audio\n'e' to pause the audio", 32, 94);
+    ofDrawBitmapString("distortion: (" + ofToString((float)distortion,2) + ")" ,32,94);
+    
+    ofDrawBitmapString("press 's' to unpause the audio\n'e' to pause the audio", 32, 106);
     
     
 	ofNoFill();
@@ -379,7 +381,6 @@ void ofApp::audioIn(ofSoundBuffer & input){
     //ofLog(OF_LOG_NOTICE, "audioIn called");
     float amp_in = 30;
     float clip_in = 1.0;
-    float clip_out = 0.2;
     float amp = 1.0;
     
 	float curVol = 0.0;
@@ -412,24 +413,36 @@ void ofApp::audioIn(ofSoundBuffer & input){
         */
         //-------------- output
         lAudio[i] = -lMic[i]; //
-        if(lAudio[i] > clip_out){
-            lAudio[i] = clip_out;
+        if(lAudio[i] > distortion){
+            lAudio[i] = distortion;
+            //lAudio[i] = 1;
         }
-        if(lAudio[i] < -clip_out){
-            lAudio[i] = -clip_out;
+        if(lAudio[i] < -distortion){
+            lAudio[i] = -distortion;
+            //lAudio[i] = -1;
         }
         
         rAudio[i] = -rMic[i];
-        if(rAudio[i] > clip_out){
-            rAudio[i] = clip_out;
+        if(rAudio[i] > distortion){
+            rAudio[i] = distortion;
+            //rAudio[i] = 1;
         }
-        if(rAudio[i] < -clip_out){
-            rAudio[i] = -clip_out;
+        if(rAudio[i] < -distortion){
+            rAudio[i] = -distortion;
+            //rAudio[i] = -1;
         }
 
+        /*
+        lAudio[i] /= distortion;
+        rAudio[i] /= distortion;
+        */
+        
         lAudio[i] *= volume;
         rAudio[i] *= volume;
-
+        
+        
+        
+        
         /*
         lAudio[i] *= volume*amp;
         rAudio[i] *= volume*amp;
@@ -577,6 +590,10 @@ void ofApp::onSliderEvent(ofxDatGuiSliderEvent e)
 {
     cout << "onSliderEvent: " << e.target->getLabel() << " " << e.target->getValue() << endl;
     if (e.target->is("datgui opacity")) gui->setOpacity(e.scale);
+    if (e.target->is("volume")) volume = e.target->getValue();
+    if (e.target->is("distortion")) distortion = e.target->getValue();
+    
+
 }
 
 void ofApp::onTextInputEvent(ofxDatGuiTextInputEvent e)

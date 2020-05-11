@@ -47,8 +47,9 @@ class ofApp : public ofBaseApp{
         /* Speaker */
         vector <float> lAudio;
         vector <float> rAudio;
-        float     volume;
-        
+        float volume;
+        float distortion;
+    
         //--------- gui
         /*
         ofxPanel gui;
