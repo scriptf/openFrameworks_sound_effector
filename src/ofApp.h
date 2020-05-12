@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ofMain.h"
-//#include "ofxGui.h"
+#include "ofxGui.h"  // ofxPanel
 #include "ofxDatGui.h"
 
 
@@ -49,19 +49,19 @@ public:
     int lAudioSize;
     int rAudioSize;
     
-    float volume;
-    float distortion;
-
     //--------- grpah
     int gWidth;  // Width of graph
     int gHeight;
     int gHeightCenter;
     //--------- gui
-    /*
-    ofxPanel gui;
+    ofxPanel guiPanel;
     ofxFloatSlider volume;
+    ofxFloatSlider distortion;
+    // float volume;
+    // float distortion;
     bool bHide;
-    */
+    
+    //--------- ofxDataGui
     ofxDatGui* gui;
     bool mFullscreen;
     void refreshWindow();

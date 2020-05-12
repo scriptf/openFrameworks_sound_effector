@@ -3,7 +3,6 @@
 //--------------------------------------------------------------
 void ofApp::setup()
 {
-    ofSetWindowShape(2100, 1200);
     volume = 1.0f;
     distortion = 1.0f;
     gWidth = 300; // Width of graph
@@ -82,14 +81,17 @@ void ofApp::setup()
     soundStream.setup(settings);
 
     //----------------------- gui(ofxGui)
-    /*
-    gui.setup(); // most of the time you don't need a name
-    // initial,,max
-    gui.add(volume.setup("volume", 1, 0.1, 3));
-    //  bHide = false;
-    */
+    
+    guiPanel.setup(); // most of the time you don't need a name
+    guiPanel.setPosition(32+2*gWidth+10,150);
+    // initial,min,max
+    guiPanel.add(volume.setup("volume", 1, 0, 3));
+    guiPanel.add(distortion.setup("clip input", 1, 0, 1));
+    
+    bHide = false;
 
     //----------------------- gui(ofxDatGui)
+    /*
     // instantiate and position the gui //
     gui = new ofxDatGui( ofxDatGuiAnchor::TOP_RIGHT );
     //gui = new ofxDatGui(32+2*gWidth+10,150);
@@ -126,6 +128,7 @@ void ofApp::setup()
     // launch the app //
     mFullscreen = false;
     refreshWindow();
+    */
 }
 
 //--------------------------------------------------------------
@@ -147,6 +150,12 @@ void ofApp::update()
 //--------------------------------------------------------------
 void ofApp::draw()
 {
+    // auto draw?
+    // should the gui control hiding?
+    if(!bHide){
+        guiPanel.draw();
+    }
+
     float scale = 100.0f;
     float tmp_x = 0.0f;
     int tmp_vec_size = 0;
@@ -168,7 +177,7 @@ void ofApp::draw()
     ofTranslate(32, 150, 0); // Change origin of the coordinates.
 
     ofSetColor(225);
-    ofDrawBitmapString("Left Input", 4, 18);
+    ofDrawBitmapString("Left input", 4, 18);
 
     ofSetLineWidth(1);
     ofDrawRectangle(0, 0, gWidth, gHeight);
@@ -193,7 +202,7 @@ void ofApp::draw()
     ofPushMatrix();
     ofTranslate(32+gWidth, 150, 0);
     ofSetColor(225);
-    ofDrawBitmapString("Right Input", 4, 18);
+    ofDrawBitmapString("Right input", 4, 18);
     ofSetLineWidth(1);
     ofDrawRectangle(0, 0, gWidth, gHeight);
 
@@ -215,7 +224,7 @@ void ofApp::draw()
     ofPushMatrix();
     ofTranslate(32, 350, 0);
     ofSetColor(225);
-    ofDrawBitmapString("Left Output", 4, 18);
+    ofDrawBitmapString("Left output", 4, 18);
     ofSetLineWidth(1);
     ofDrawRectangle(0, 0, gWidth, gHeight);
 
@@ -236,7 +245,7 @@ void ofApp::draw()
     ofPushMatrix();
     ofTranslate(32+gWidth, 350, 0);
     ofSetColor(225);
-    ofDrawBitmapString("Right Output", 4, 18);
+    ofDrawBitmapString("Right output", 4, 18);
     ofSetLineWidth(1);
     ofDrawRectangle(0, 0, gWidth, gHeight);
 
@@ -259,13 +268,6 @@ void ofApp::draw()
     reportString = "buffers received: "+ofToString(bufferCounter)+"\ndraw routines called: "+ofToString(drawCounter)+"\nticks: " + ofToString(soundStream.getTickCount());
     ofDrawBitmapString(reportString, 300, 82);
 
-    // auto draw?
-    // should the gui control hiding?
-    /*
-    if(!bHide){
-        gui.draw();
-    }
-    */
 }
 
 //--------------------------------------------------------------
