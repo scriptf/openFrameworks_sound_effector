@@ -29,12 +29,15 @@ public:
 
     vector <float> lMic;  // Left Mic
     vector <float> rMic;  // Right Mic
+    vector <float> lMicCliped;  // Left Mic
+    vector <float> rMicCliped;  // Right Mic
+
     vector <float> volHistory;
     int lMicSize;
     int rMicSize;
     
-    int 	bufferCounter;
-    int 	drawCounter;
+    int bufferCounter;
+    int drawCounter;
 
     float smoothedVol;
     float scaledVol;
@@ -52,7 +55,10 @@ public:
     int gHeightCenter;
     //--------- ofxPanel
     ofxPanel guiPanel;
+    ofxFloatSlider inputGrpahScale;
+    ofxFloatSlider outputGrpahScale;
     ofxFloatSlider volume;
+    ofxFloatSlider gain;
     ofxFloatSlider distortion;
     
     // float volume;

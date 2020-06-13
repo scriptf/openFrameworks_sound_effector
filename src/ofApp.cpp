@@ -4,6 +4,7 @@
 void ofApp::setup()
 {
     volume = 1.0f;
+    gain = 50.0f;
     distortion = 1.0f;
     gWidth = 300; // Width of graph
     gHeight = 200;
@@ -22,6 +23,10 @@ void ofApp::setup()
     rMic.assign(bufferSize, 0.0);
     lMicSize = lMic.size();
     rMicSize = rMic.size();
+
+    lMicCliped.assign(bufferSize, 0.0);
+    rMicCliped.assign(bufferSize, 0.0);
+
 
     lAudio.assign(bufferSize, 0.0);
     rAudio.assign(bufferSize, 0.0);
@@ -55,7 +60,7 @@ void ofApp::setup()
     if(!devices.empty())
     {
         ///*
-        // get sound in PC(Mac) by "Black Hole"
+        // get Mic in PC(Mac) by "Black Hole"
         settings.setInDevice(devices[2]);
         ofLog(OF_LOG_NOTICE, "deviceID = %d", devices[2].deviceID);
         ofLog(OF_LOG_NOTICE,  devices[2].name);
@@ -84,8 +89,12 @@ void ofApp::setup()
     guiPanel.setup(); // most of the time you don't need a name
     guiPanel.setPosition(32+2*gWidth+10,150);
     // initial,min,max
-    guiPanel.add(volume.setup("volume", 1, 0, 3));
-    guiPanel.add(distortion.setup("clip input", 1, 0, 1));
+    
+    guiPanel.add(volume.setup("main volume", 0.5, 0, 3));
+    guiPanel.add(inputGrpahScale.setup("inputGrpahScale", 1, 1, 1000));
+    guiPanel.add(outputGrpahScale.setup("outputGrpahScale", 1, 1, 1000));
+    guiPanel.add(gain.setup("input gain(before clipping)", 50, 1, 500));
+    guiPanel.add(distortion.setup("clipping point(absolute value)", 1, 0, 1));
     
     bHide = false;
 
@@ -188,7 +197,7 @@ void ofApp::draw()
     {
         //ofMap: Given a value and an input range, map the value to an output range.
         tmp_x = ofMap(i, 0, lMicSize, 0, gWidth, true);
-        ofVertex(tmp_x, gHeightCenter - lMic[i]*scale);
+        ofVertex(tmp_x, gHeightCenter - lMic[i]*inputGrpahScale);
     }
     ofEndShape(false);
 
@@ -211,7 +220,7 @@ void ofApp::draw()
     {
         //iの範囲(i1_min,i1_max)から別の範囲(i2_min,i2_max)へ変換する
         tmp_x = ofMap(i, 0, rMicSize, 0, gWidth, true);
-        ofVertex(tmp_x, gHeightCenter - rMic[i]*scale);
+        ofVertex(tmp_x, gHeightCenter - rMic[i]*inputGrpahScale);
     }
     ofEndShape(false);
     ofPopMatrix();
@@ -232,7 +241,7 @@ void ofApp::draw()
     for (unsigned int i = 0; i < lAudioSize; i++)
     {
         tmp_x = ofMap(i, 0, lAudioSize, 0, gWidth, true);
-        ofVertex(tmp_x, gHeightCenter - lAudio[i]*scale);
+        ofVertex(tmp_x, gHeightCenter - lAudio[i]*outputGrpahScale);
     }
     ofEndShape(false);
     ofPopMatrix();
@@ -253,7 +262,7 @@ void ofApp::draw()
     for (unsigned int i = 0; i < rAudioSize; i++)
     {
         tmp_x = ofMap(i, 0, rAudioSize, 0, gWidth, true);
-        ofVertex(tmp_x, gHeightCenter - rAudio[i]*scale);
+        ofVertex(tmp_x, gHeightCenter - rAudio[i]*outputGrpahScale);
     }
     ofEndShape(false);
     ofPopMatrix();
@@ -272,12 +281,10 @@ void ofApp::draw()
 void ofApp::audioIn(ofSoundBuffer & input)
 {
     //ofLog(OF_LOG_NOTICE, "audioIn called");
-    float amp_in = 30;
+//    float amp_in = 30;
     float clip_in = 1.0;
     float amp = 1.0;
-
     float curVol = 0.0;
-
     // samples are "interleaved"
     int numCounted = 0;
 
@@ -285,53 +292,27 @@ void ofApp::audioIn(ofSoundBuffer & input)
     for (size_t i = 0; i < input.getNumFrames(); i++)
     {
         //--------------------- input
-        lMic[i]	= input[i*2]*amp_in;   // even number: left audio
-        if(lMic[i] > clip_in)
+        lMic[i]	= lMicCliped[i] = input[i*2]*gain;   // even number: left audio
+        if(lMicCliped[i] > clip_in) // clipping
         {
-            lMic[i] = clip_in;
+            lMicCliped[i] = clip_in;
         }
-        if(lMic[i] < -clip_in)
+        if(lMicCliped[i] < -clip_in)
         {
-            lMic[i] = -clip_in;
+            lMicCliped[i] = -clip_in;
         }
-        rMic[i]	= input[i*2+1]*amp_in; // odd number: right audio
-        if(rMic[i] > clip_in)
+        rMic[i]	= rMicCliped[i] = input[i*2+1]*gain; // odd number: right audio
+        if(rMicCliped[i] > clip_in)  // clipping
         {
-            rMic[i] = clip_in;
+            rMicCliped[i] = clip_in;
         }
-        if(rMic[i] < -clip_in)
+        if(rMicCliped[i] < -clip_in)
         {
-            rMic[i] = -clip_in;
+            rMicCliped[i] = -clip_in;
         }
         //--------------------- set distortion sound for output
-        lAudio[i] = lMic[i]; //
-        if(lAudio[i] > distortion)
-        {
-            lAudio[i] = distortion;
-        }
-        if(lAudio[i] < -distortion)
-        {
-            lAudio[i] = -distortion;
-        }
-
-        rAudio[i] = rMic[i];
-        if(rAudio[i] > distortion)
-        {
-            rAudio[i] = distortion;
-        }
-        if(rAudio[i] < -distortion)
-        {
-            rAudio[i] = -distortion;
-        }
-
-        lAudio[i] *= volume;
-        rAudio[i] *= volume;
-
-        /*
-        lAudio[i] *= volume*amp;
-        rAudio[i] *= volume*amp;
-        */
-
+        lAudio[i] = volume * lMicCliped[i];
+        rAudio[i] = volume * rMicCliped[i];
         //ofLog(OF_LOG_NOTICE, "l = %f",lMic[i]);
         //ofLog(OF_LOG_NOTICE, "r = %f",rMic[i]);
         curVol += lMic[i] * lMic[i];
@@ -372,18 +353,6 @@ void ofApp::audioOut(ofSoundBuffer &buffer)
 void ofApp::keyPressed  (int key)
 {
     float tmp = 0.0;
-    /*
-    if (key == '-' || key == '_')
-    {
-        volume = volume - 0.05;
-        volume = MAX(volume, 0);
-    }
-    else if (key == '+' || key == '=')
-    {
-        volume = volume + 0.05;
-        volume = MIN(volume, 3);
-    }
-    */
     if( key == 's' )
     {
         soundStream.start();
