@@ -55,7 +55,7 @@ void ofApp::setup()
     if(!devices.empty())
     {
         ///*
-        // Mac内の音声を取得する(Black Hole)
+        // get sound in PC(Mac) by "Black Hole"
         settings.setInDevice(devices[2]);
         ofLog(OF_LOG_NOTICE, "deviceID = %d", devices[2].deviceID);
         ofLog(OF_LOG_NOTICE,  devices[2].name);
@@ -81,7 +81,6 @@ void ofApp::setup()
     soundStream.setup(settings);
 
     //----------------------- gui(ofxGui)
-    
     guiPanel.setup(); // most of the time you don't need a name
     guiPanel.setPosition(32+2*gWidth+10,150);
     // initial,min,max
@@ -175,7 +174,6 @@ void ofApp::draw()
     ofPushMatrix();
     //ofTranslate(x,y,z); // Move the coordinate system to position of point(x,y,z) and make that zero.
     ofTranslate(32, 150, 0); // Change origin of the coordinates.
-
     ofSetColor(225);
     ofDrawBitmapString("Left input", 4, 18);
 

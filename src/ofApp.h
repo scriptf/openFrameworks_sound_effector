@@ -4,12 +4,10 @@
 #include "ofxGui.h"  // ofxPanel
 #include "ofxDatGui.h"
 
-
 class ofApp : public ofBaseApp
 {
 
 public:
-
     void setup();
     void update();
     void draw();
@@ -48,19 +46,18 @@ public:
     vector <float> rAudio;
     int lAudioSize;
     int rAudioSize;
-    
     //--------- grpah
     int gWidth;  // Width of graph
     int gHeight;
     int gHeightCenter;
-    //--------- gui
+    //--------- ofxPanel
     ofxPanel guiPanel;
     ofxFloatSlider volume;
     ofxFloatSlider distortion;
+    
     // float volume;
     // float distortion;
     bool bHide;
-    
     //--------- ofxDataGui
     ofxDatGui* gui;
     bool mFullscreen;
